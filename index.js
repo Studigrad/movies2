@@ -40,7 +40,7 @@ app.get("/",(req,res)=>{
     res.send(newData)
 })
 
-app.post('/users',async(req,res)=>{
+app.post('/api/v1/users',async(req,res)=>{
    const {email,name,password,confirmPassword} = JSON.parse(req.rawBody)
     try{
     const newUser = await User.create({ email: email ,name:name,password:password,confirmPassword:confirmPassword});
@@ -58,7 +58,7 @@ app.post('/users',async(req,res)=>{
     res.json(newUser)
     // res.json(newUser)
 })
-app.post('/sessions',async(req,res)=>{
+app.post('/api/v1/sessions',async(req,res)=>{
     const {email,password} = JSON.parse(req.rawBody)
     if(req.session.password==password || req.session.email==email ){
         res.json({token:req.sessionID,status:'1'})
@@ -79,7 +79,7 @@ app.post('/sessions',async(req,res)=>{
    
 
 })
-app.post('/movies',async(req,res)=>{
+app.post('/api/v1/movies',async(req,res)=>{
     try{
     const {title,year,format,actors} = JSON.parse(req.rawBody)
     //console.log(JSON.parse(req.rawBody))
@@ -107,7 +107,7 @@ app.post('/movies',async(req,res)=>{
         }
    
 });
-app.delete('/movies/:id',async(req,res)=>{
+app.delete('/api/v1/movies/:id',async(req,res)=>{
     const id = req.params.id;
   
         const deleted= await Film.destroy({ where: { id: id}});
@@ -128,7 +128,8 @@ else{
    
     
 })
-app.patch('/movies/:id',async(req,res)=>{
+app.patch('/api/v1/movies/:id',async(req,res)=>{
+
     const id = req.params.id;
     const {title,year,format,actors} = JSON.parse(req.rawBody)
     var objects = []
@@ -137,17 +138,25 @@ app.patch('/movies/:id',async(req,res)=>{
             const newActor = await Actor.create({name:actor})
             objects.push(newActor)
         }
+        const findFilm = await Film.findOne({where:{id:id},include: [ Actor ] });
+        await findFilm.destroy();
+        const newFilm = await Film.create({id:id,title: title ,year:year,format:format})
+/*
        const updated = await Film.update({ title: title ,year:year,format:format}, {
             where: {
               id: id
             }
-          });
-        const findFilm = await Film.findOne({where:{title:title},include: [ Actor ] });
+          });*/
+          for(let object of objects){
+            newFilm.addActor(object)
+        }
+        await newFilm.save();
+        const found = await Film.findOne({where:{title:title},include: [ Actor ] });
 
        // console.log(newFilm)
         //console.log(objects)
-        console.log(updated)
-        res.json(updated)
+        console.log(found)
+        res.json(found)
         }
         catch(e){
             console.log(e.errors)
@@ -156,14 +165,14 @@ app.patch('/movies/:id',async(req,res)=>{
 })
 
 
-app.get('/movies/:id',async(req,res)=>{
+app.get('/api/v1/movies/:id',async(req,res)=>{
     const id = req.params.id
     const foundMovie = await Film.findOne({where:{id:id},include: [ Actor ] });
     //console.log("Actors parse OKKKKKK : "+foundMovie)
     res.json(foundMovie)
     //res.render('foundMovie',{foundMovie});
 })
-app.get('/movies',async(req,res)=>{
+app.get('/api/v1/movies',async(req,res)=>{
     let {actor,title,search,sort,order,limit,offset} = req.query
     if(title || search){
         const foundMovie = await Film.findAll({where:{
@@ -192,7 +201,7 @@ app.get('/movies',async(req,res)=>{
     }
     //res.render('foundMovie',{foundMovie}); { [Op.or]: [{ order: order }, { order: sort }]}
 })
-app.post('/movies/import',async(req,res)=>{
+app.post('/api/v1/movies/import',async(req,res)=>{
     try{
     for(let text of newData){
          const newMovie = await Film.create({title:text.title,year:text.year,format:text.format});
