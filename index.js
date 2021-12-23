@@ -33,7 +33,8 @@ const options = {
   };
 
 app.use(bodyParser.json(options));
-
+let semail =''
+let spassword =''
 
 app.get("/",(req,res)=>{
 
@@ -44,23 +45,23 @@ app.post('/api/v1/users',async(req,res)=>{
    const {email,name,password,confirmPassword} = JSON.parse(req.rawBody)
     try{
     const newUser = await User.create({ email: email ,name:name,password:password,confirmPassword:confirmPassword});
+   // req.sessionID = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaWF0IjoxNjI0OTYwMTQwfQ.Yh91vOoWAQrcQMGGgGxA8kdWcn3JAq_BoIG8DF9DTnQ'
     req.session.email = newUser.email;
     req.session.password = newUser.password;
-    console.log(newUser)
-    res.json(newUser)
+    //console.log(newUser)
+    res.json({token:req.sessionID,status:'1'})
     }
     catch(e){
         console.log(e.errors)
         res.json(e.errors)
     }
-    console.log(newUser)
-    
-    res.json(newUser)
-    // res.json(newUser)
 })
 app.post('/api/v1/sessions',async(req,res)=>{
     const {email,password} = JSON.parse(req.rawBody)
-    if(req.session.password==password || req.session.email==email ){
+    //console.log(req.rawBody)
+    //console.log(req.session.password)
+   // console.log(req.session.email)
+    if(req.session.password==password && req.session.email==email ){
         res.json({token:req.sessionID,status:'1'})
     }
     else{
@@ -84,7 +85,8 @@ app.post('/api/v1/movies',async(req,res)=>{
     const {title,year,format,actors} = JSON.parse(req.rawBody)
     //console.log(JSON.parse(req.rawBody))
     var objects = [];
-    
+    console.log(JSON.stringify(req.headers));
+
         for(let actor of actors){
             const newActor = await Actor.create({name:actor})
             objects.push(newActor)
